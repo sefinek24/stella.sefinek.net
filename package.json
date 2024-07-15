@@ -1,8 +1,8 @@
 {
   "name": "stella.sefinek.net",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A website that allows you to shorten the URL for a specific page on sefinek.net.",
-  "homepage": "https://github.com/sefinek24/stella.sefinek.net#readme",
+  "homepage": "https://stella.sefinek.net",
   "bugs": {
     "url": "https://github.com/sefinek24/stella.sefinek.net/issues"
   },
