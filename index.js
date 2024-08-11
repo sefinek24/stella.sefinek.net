@@ -16,7 +16,7 @@ const BASE_URL = 'https://sefinek.net/genshin-stella-mod';
 
 // Routes
 app.get('*', (req, res) => {
-	res.set('Referrer', 'https://stella.sefinek.net');
+	res.set('Referer', 'https://stella.sefinek.net');
 	res.redirect(301, `${BASE_URL}${req.originalUrl.replace(/\/$/, '')}`);
 });
 
