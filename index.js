@@ -1,35 +1,56 @@
 require('dotenv').config();
-
-const express = require('express');
+const http = require('http');
 const helmet = require('helmet');
-const app = express();
+const { parse } = require('url');
+const morganMiddleware = require('./middlewares/morgan.js');
 
-// Middlewares
-const logger = require('./middlewares/morgan.js');
-app.use(helmet());
-app.use(logger);
+const renderHtml = (err, req, res, msg, status) => {
+	res.writeHead(status, { 'Content-Type': 'text/html' });
+	res.end(`<h1>${status} ${msg}</h1>`);
+	if (err) console.error(err);
+};
 
+const helmetMiddleware = helmet();
+const applyMiddlewares = async (req, res) => {
+	try {
+		helmetMiddleware(req, res, err => {
+			if (err) throw err;
+		});
+		morganMiddleware(req, res, err => {
+			if (err) throw err;
+		});
+	} catch (err) {
+		renderHtml(err, req, res, 'Internal Server Error', 500);
+		return false;
+	}
+	return true;
+};
 
-// Variables
 const BASE_URL = 'https://sefinek.net/genshin-stella-mod';
 
+const server = http.createServer(async (req, res) => {
+	const middlewaresApplied = await applyMiddlewares(req, res);
+	if (!middlewaresApplied) return;
 
-// Routes
-app.get('*', (req, res) => {
-	res.set('Referrer', 'https://stella.sefinek.net');
-	res.redirect(301, `${BASE_URL}${req.originalUrl.replace(/\/$/, '')}`);
+	if (req.method === 'GET') {
+		const { pathname } = parse(req.url);
+		res.setHeader('Referrer', 'https://stella.sefinek.net');
+		res.writeHead(301, { Location: `${BASE_URL}${pathname.replace(/\/$/, '')}` });
+		res.end();
+	} else {
+		renderHtml(null, req, res, 'Method Not Allowed', 405);
+		res.writeHead(405, { 'Content-Type': 'text/plain' });
+	}
 });
 
-
-// Start the server
-app.listen(process.env.PORT, () => {
+server.listen(process.env.PORT, () => {
 	if (process.env.NODE_ENV === 'production') {
 		try {
 			process.send('ready');
 		} catch (err) {
 			console.error('Failed to send ready signal to parent process.', err.message);
 		}
+	} else {
+		console.log(`Server running at http://127.0.0.1:${process.env.PORT}`);
 	}
-
-	console.log(`Running on http://127.0.0.1:${process.env.PORT}`);
 });

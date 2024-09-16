@@ -1,6 +1,6 @@
 {
   "name": "stella.sefinek.net",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "A website that allows you to shorten the URL for a specific page on sefinek.net.",
   "homepage": "https://stella.sefinek.net",
   "bugs": {
@@ -20,7 +20,6 @@
   },
   "dependencies": {
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
     "helmet": "^7.1.0",
     "morgan": "^1.10.0"
   },
