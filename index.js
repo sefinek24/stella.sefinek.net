@@ -1,45 +1,35 @@
 require('dotenv').config();
-const http = require('http');
-const helmet = require('helmet');
-const { parse } = require('url');
-const morganMiddleware = require('./middlewares/morgan.js');
 
-const renderHtml = (err, req, res, msg, status) => {
+const http = require('node:http');
+const { parse } = require('node:url');
+const helmet = require('helmet');
+const morganMiddleware = require('./middlewares/morgan.js');
+const BASE_URL = 'https://sefinek.net/genshin-stella-mod';
+
+const renderHtml = (res, msg, status, err = null) => {
 	res.writeHead(status, { 'Content-Type': 'text/html' });
 	res.end(`<h1>${status} ${msg}</h1>`);
 	if (err) console.error(err);
 };
 
-const helmetMiddleware = helmet();
-const applyMiddlewares = async (req, res) => {
-	try {
-		helmetMiddleware(req, res, err => {
-			if (err) throw err;
-		});
-		morganMiddleware(req, res, err => {
-			if (err) throw err;
-		});
-	} catch (err) {
-		renderHtml(err, req, res, 'Internal Server Error', 500);
-		return false;
-	}
-	return true;
-};
-
-const BASE_URL = 'https://sefinek.net/genshin-stella-mod';
+const applyMiddlewares = (req, res) =>
+	Promise.all([
+		new Promise((resolve, reject) => helmet()(req, res, err => (err ? reject(err) : resolve()))),
+		new Promise((resolve, reject) => morganMiddleware(req, res, err => (err ? reject(err) : resolve())))
+	]);
 
 const server = http.createServer(async (req, res) => {
-	const middlewaresApplied = await applyMiddlewares(req, res);
-	if (!middlewaresApplied) return;
+	try {
+		await applyMiddlewares(req, res);
 
-	if (req.method === 'GET') {
-		const { pathname } = parse(req.url);
-		res.setHeader('Referrer', 'https://stella.sefinek.net');
-		res.writeHead(301, { Location: `${BASE_URL}${pathname.replace(/\/$/, '')}` });
-		res.end();
-	} else {
-		renderHtml(null, req, res, 'Method Not Allowed', 405);
-		res.writeHead(405, { 'Content-Type': 'text/plain' });
+		if (req.method === 'GET') {
+			res.writeHead(301, { Location: `${BASE_URL}${parse(req.url).pathname.replace(/\/$/, '')}` });
+			return res.end();
+		}
+
+		renderHtml(res, 'Method Not Allowed', 405);
+	} catch (err) {
+		renderHtml(res, 'Internal Server Error', 500, err);
 	}
 });
 
